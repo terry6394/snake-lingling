@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>凌凌追我吃</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #1a1a2e;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #e8d5b7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #ui .score { font-size: 18px; font-weight: bold; }
+    #ui .hint { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+    #startScreen, #gameOverScreen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(26,26,46,0.95);
+      z-index: 20;
+      color: #e8d5b7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      text-align: center;
+    }
+    #startScreen h1, #gameOverScreen h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: #ff6b9d;
+    }
+    #startScreen p, #gameOverScreen p {
+      font-size: 16px;
+      margin: 8px 0;
+      opacity: 0.8;
+    }
+    .btn {
+      margin-top: 24px;
+      padding: 14px 36px;
+      font-size: 18px;
+      border: none;
+      border-radius: 30px;
+      background: #ff6b9d;
+      color: #1a1a2e;
+      font-weight: bold;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 0.15s;
+    }
+    .btn:active { transform: scale(0.95); }
+    #gameOverScreen { display: none; }
+    .emoji { font-size: 48px; margin-bottom: 12px; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
+</head>
+<body>
+  <div id="ui">
+    <div class="score">凌凌追了我 <span id="score">0</span> 秒还没追到 😅</div>
+    <div class="hint">拖动 / 滑动 / 键盘方向键 逃跑</div>
+  </div>
+
+  <div id="startScreen">
+    <div class="emoji">🐍💨</div>
+    <h1>凌凌追我吃</h1>
+    <p>凌凌是一条贪吃蛇，一直追着我跑</p>
+    <p>我要拼命逃跑，别被她吃掉！</p>
+    <button class="btn" onclick="startGame()">开始逃跑</button>
+  </div>
+
+  <div id="gameOverScreen">
+    <div class="emoji">😱</div>
+    <h1>被凌凌吃掉了！</h1>
+    <p>我坚持了 <span id="finalScore">0</span> 秒</p>
+    <p id="comment"></p>
+    <button class="btn" onclick="restartGame()">再逃一次</button>
+  </div>
+
+<script>
+// === 游戏配置 ===
+const CONFIG = {
+  playerSpeed: 4,
+  snakeBaseSpeed: 2.2,
+  snakeAccel: 0.015,
+  snakeSegDist: 14,
+  snakeInitLen: 8,
+  foodCount: 5,
+  starCount: 30,
+  worldMargin: 40
+};
+
+// === 全局状态 ===
+let gameState = 'start'; // start, playing, over
+let score = 0;
+let startTime = 0;
+let player, snake, foods, stars;
+let shake = 0;
+let trailLayer;
+let font;
+
+// === 颜色 ===
+const COLORS = {
+  bg: '#1a1a2e',
+  snakeHead: '#ff6b9d',
+  snakeBody: '#c44569',
+  snakePattern: '#ff9ff3',
+  player: '#54a0ff',
+  playerGlow: '#74b9ff',
+  food: '#feca57',
+  star: '#dfe6e9'
+};
+
+// === 工具函数 ===
+function distSq(x1,y1,x2,y2){ let dx=x1-x2, dy=y1-y2; return dx*dx+dy*dy; }
+
+// === 玩家类 ===
+class Player {
+  constructor(x, y) {
+    this.pos = createVector(x, y);
+    this.vel = createVector(0, 0);
+    this.target = createVector(x, y);
+    this.trail = [];
+    this.maxTrail = 20;
+    this.angle = 0;
+  }
+  update() {
+    // 键盘输入
+    let kx = 0, ky = 0;
+    if (keys[LEFT_ARROW] || keys[65]) kx -= 1;
+    if (keys[RIGHT_ARROW] || keys[68]) kx += 1;
+    if (keys[UP_ARROW] || keys[87]) ky -= 1;
+    if (keys[DOWN_ARROW] || keys[83]) ky += 1;
+    if (kx !== 0 || ky !== 0) {
+      let v = createVector(kx, ky).normalize().mult(CONFIG.playerSpeed * 1.3);
+      this.vel.lerp(v, 0.3);
+    }
+    // 触摸/鼠标目标跟随
+    if (touchActive && touchTarget) {
+      let dir = p5.Vector.sub(touchTarget, this.pos);
+      if (dir.mag() > 5) {
+        dir.normalize().mult(CONFIG.playerSpeed * 1.5);
+        this.vel.lerp(dir, 0.25);
+      }
+    }
+    this.vel.limit(CONFIG.playerSpeed * 1.8);
+    this.pos.add(this.vel);
+    // 边界
+    this.pos.x = constrain(this.pos.x, CONFIG.worldMargin, width - CONFIG.worldMargin);
+    this.pos.y = constrain(this.pos.y, CONFIG.worldMargin, height - CONFIG.worldMargin);
+    // 朝向
+    if (this.vel.mag() > 0.5) this.angle = this.vel.heading();
+    // 拖尾
+    this.trail.push(this.pos.copy());
+    if (this.trail.length > this.maxTrail) this.trail.shift();
+  }
+  display() {
+    // 拖尾
+    noStroke();
+    for (let i = 0; i < this.trail.length; i++) {
+      let t = i / this.trail.length;
+      fill(84, 160, 255, t * 60);
+      let s = 8 * t;
+      ellipse(this.trail[i].x, this.trail[i].y, s, s);
+    }
+    // 光晕
+    fill(116, 185, 255, 40);
+    ellipse(this.pos.x, this.pos.y, 36, 36);
+    // 身体
+    push();
+    translate(this.pos.x, this.pos.y);
+    rotate(this.angle);
+    // 小身体
+    fill(84, 160, 255);
+    ellipse(0, 0, 22, 18);
+    // 眼睛
+    fill(255);
+    ellipse(6, -5, 7, 7);
+    ellipse(6, 5, 7, 7);
+    fill(30);
+    ellipse(7, -5, 3, 3);
+    ellipse(7, 5, 3, 3);
+    // 慌张表情
+    stroke(30);
+    strokeWeight(1.5);
+    noFill();
+    arc(-2, 0, 6, 6, PI*0.3, PI*0.7);
+    pop();
+  }
+}
+
+// === 蛇类 ===
+class Snake {
+  constructor(x, y) {
+    this.segments = [];
+    for (let i = 0; i < CONFIG.snakeInitLen; i++) {
+      this.segments.push(createVector(x - i * CONFIG.snakeSegDist, y));
+    }
+    this.speed = CONFIG.snakeBaseSpeed;
+    this.wigglePhase = 0;
+    this.eyeOffset = 0;
+  }
+  update(target) {
+    this.speed += CONFIG.snakeAccel;
+    let head = this.segments[0];
+    let dir = p5.Vector.sub(target, head);
+    let d = dir.mag();
+    dir.normalize();
+    // 越近越兴奋，摆动越大
+    let excitement = map(constrain(d, 0, 300), 0, 300, 1, 0.3);
+    this.wigglePhase += 0.15 + excitement * 0.2;
+    // 头部移动
+    let wiggle = sin(this.wigglePhase) * 3 * excitement;
+    let perp = createVector(-dir.y, dir.x).mult(wiggle);
+    let move = p5.Vector.add(dir, perp);
+    move.normalize().mult(this.speed);
+    head.add(move);
+    // 身体跟随
+    for (let i = 1; i < this.segments.length; i++) {
+      let prev = this.segments[i-1];
+      let curr = this.segments[i];
+      let d2 = p5.Vector.dist(prev, curr);
+      if (d2 > CONFIG.snakeSegDist) {
+        let pull = p5.Vector.sub(prev, curr);
+        pull.normalize().mult((d2 - CONFIG.snakeSegDist) * 0.4);
+        curr.add(pull);
+      }
+    }
+    // 眼睛动画
+    this.eyeOffset = sin(this.wigglePhase * 2) * 2;
+  }
+  display() {
+    // 身体段
+    noStroke();
+    for (let i = this.segments.length - 1; i >= 0; i--) {
+      let t = i / this.segments.length;
+      let s = map(i, 0, this.segments.length, 18, 10);
+      // 颜色渐变
+      let r = lerp(255, 196, t);
+      let g = lerp(107, 69, t);
+      let b = lerp(157, 105, t);
+      fill(r, g, b);
+      let seg = this.segments[i];
+      ellipse(seg.x, seg.y, s, s);
+      // 花纹
+      if (i % 3 === 0) {
+        fill(255, 159, 243, 120);
+        ellipse(seg.x, seg.y, s * 0.5, s * 0.5);
+      }
+    }
+    // 头部
+    let head = this.segments[0];
+    let dir = p5.Vector.sub(this.segments[0], this.segments[1]);
+    let angle = dir.heading();
+    push();
+    translate(head.x, head.y);
+    rotate(angle);
+    // 头
+    fill(255, 107, 157);
+    ellipse(0, 0, 26, 22);
+    // 眼睛
+    fill(255);
+    ellipse(8, -7 + this.eyeOffset, 9, 9);
+    ellipse(8, 7 - this.eyeOffset, 9, 9);
+    fill(30);
+    ellipse(10, -7 + this.eyeOffset, 4, 4);
+    ellipse(10, 7 - this.eyeOffset, 4, 4);
+    // 高光
+    fill(255, 200);
+    ellipse(6, -8 + this.eyeOffset, 3, 3);
+    ellipse(6, 6 - this.eyeOffset, 3, 3);
+    // 舌头
+    if (frameCount % 30 < 15) {
+      stroke(255, 80, 120);
+      strokeWeight(2);
+      noFill();
+      let tongueLen = 12 + sin(frameCount * 0.5) * 4;
+      line(12, 0, 12 + tongueLen, -3);
+      line(12 + tongueLen, -3, 12 + tongueLen + 4, -6);
+      line(12, 0, 12 + tongueLen, 3);
+      line(12 + tongueLen, 3, 12 + tongueLen + 4, 6);
+    }
+    pop();
+  }
+  checkCollision(target, threshold) {
+    let head = this.segments[0];
+    return distSq(head.x, head.y, target.x, target.y) < threshold * threshold;
+  }
+}
+
+// === 食物类 ===
+class Food {
+  constructor() {
+    this.pos = createVector(
+      random(CONFIG.worldMargin, width - CONFIG.worldMargin),
+      random(CONFIG.worldMargin, height - CONFIG.worldMargin)
+    );
+    this.phase = random(TWO_PI);
+    this.type = floor(random(3)); // 0:爱心 1:星星 2:糖果
+  }
+  update() {
+    this.phase += 0.05;
+    this.pos.y += sin(this.phase) * 0.3;
+  }
+  display() {
+    push();
+    translate(this.pos.x, this.pos.y);
+    let s = 12 + sin(this.phase * 2) * 3;
+    noStroke();
+    if (this.type === 0) {
+      fill(255, 107, 129);
+      // 简单爱心
+      ellipse(-3, -2, s*0.7, s*0.7);
+      ellipse(3, -2, s*0.7, s*0.7);
+      triangle(-s*0.5, 0, s*0.5, 0, 0, s*0.8);
+    } else if (this.type === 1) {
+      fill(254, 202, 87);
+      // 星星
+      beginShape();
+      for (let i = 0; i < 10; i++) {
+        let a = PI/2 + i * TWO_PI/10;
+        let r = i % 2 === 0 ? s : s * 0.5;
+        vertex(cos(a) * r, sin(a) * r);
+      }
+      endShape(CLOSE);
+    } else {
+      fill(255, 159, 67);
+      ellipse(0, 0, s, s * 0.8);
+      fill(255, 200);
+      ellipse(-2, -2, 3, 3);
+    }
+    pop();
+  }
+}
+
+// === 星星背景 ===
+class Star {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = random(width);
+    this.y = random(height);
+    this.size = random(1, 3);
+    this.blinkPhase = random(TWO_PI);
+    this.blinkSpeed = random(0.02, 0.06);
+  }
+  update() {
+    this.blinkPhase += this.blinkSpeed;
+  }
+  display() {
+    let alpha = 80 + sin(this.blinkPhase) * 60;
+    fill(223, 230, 233, alpha);
+    noStroke();
+    ellipse(this.x, this.y, this.size, this.size);
+  }
+}
+
+// === 输入处理 ===
+let keys = {};
+let touchActive = false;
+let touchTarget = null;
+
+function keyPressed() { keys[keyCode] = true; return false; }
+function keyReleased() { keys[keyCode] = false; return false; }
+
+function touchStarted() {
+  touchActive = true;
+  touchTarget = createVector(touches[0].x, touches[0].y);
+  return false;
+}
+function touchMoved() {
+  if (touches.length > 0) {
+    touchTarget = createVector(touches[0].x, touches[0].y);
+  }
+  return false;
+}
+function touchEnded() {
+  touchActive = false;
+  touchTarget = null;
+  return false;
+}
+
+// 鼠标也支持（桌面）
+function mousePressed() {
+  touchActive = true;
+  touchTarget = createVector(mouseX, mouseY);
+}
+function mouseDragged() {
+  touchActive = true;
+  touchTarget = createVector(mouseX, mouseY);
+  return false;
+}
+function mouseReleased() {
+  touchActive = false;
+  touchTarget = null;
+}
+
+// === p5.js 生命周期 ===
+function setup() {
+  let canvas = createCanvas(windowWidth, windowHeight);
+  canvas.style('display', 'block');
+  colorMode(RGB, 255, 255, 255, 255);
+  noCursor();
+  // 初始化星星
+  stars = [];
+  for (let i = 0; i < CONFIG.starCount; i++) stars.push(new Star());
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  if (stars) {
+    stars = [];
+    for (let i = 0; i < CONFIG.starCount; i++) stars.push(new Star());
+  }
+}
+
+function draw() {
+  // 震动效果
+  if (shake > 0) {
+    translate(random(-shake, shake), random(-shake, shake));
+    shake *= 0.85;
+    if (shake < 0.5) shake = 0;
+  }
+
+  // 背景
+  background(26, 26, 46);
+
+  // 星星
+  for (let s of stars) { s.update(); s.display(); }
+
+  if (gameState === 'playing') {
+    // 更新分数
+    score = floor((millis() - startTime) / 1000);
+    document.getElementById('score').textContent = score;
+
+    // 食物
+    for (let f of foods) { f.update(); f.display(); }
+
+    // 蛇追玩家
+    snake.update(player.pos);
+    snake.display();
+
+    // 玩家逃跑
+    player.update();
+    player.display();
+
+    // 碰撞检测
+    if (snake.checkCollision(player.pos, 18)) {
+      gameOver();
+    }
+
+    // 距离越近越紧张
+    let d = p5.Vector.dist(snake.segments[0], player.pos);
+    if (d < 80) {
+      shake = map(d, 0, 80, 6, 0);
+    }
+  }
+}
+
+// === 游戏控制 ===
+function startGame() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameOverScreen').style.display = 'none';
+  gameState = 'playing';
+  startTime = millis();
+  score = 0;
+
+  player = new Player(width * 0.3, height * 0.5);
+  snake = new Snake(width * 0.7, height * 0.5);
+
+  foods = [];
+  for (let i = 0; i < CONFIG.foodCount; i++) foods.push(new Food());
+
+  loop();
+}
+
+function gameOver() {
+  gameState = 'over';
+  noLoop();
+  document.getElementById('finalScore').textContent = score;
+  let comment = '';
+  if (score < 5) comment = '凌凌太凶了，我还没跑远就被吃掉了 😭';
+  else if (score < 15) comment = '我尽力了，凌凌追得太紧 🥺';
+  else if (score < 30) comment = '跑得不错，但凌凌更快 😅';
+  else if (score < 60) comment = '我很能跑嘛，凌凌都追累了 😏';
+  else comment = '我是逃跑大师！凌凌放弃了 😎';
+  document.getElementById('comment').textContent = comment;
+  document.getElementById('gameOverScreen').style.display = 'flex';
+}
+
+function restartGame() {
+  startGame();
+}
+</script>
+</body>
+</html>
