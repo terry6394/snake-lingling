@@ -1,222 +1,239 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <title>凌凌追我吃</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #1a1a2e;
-      touch-action: none;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    canvas {
-      display: block;
-      margin: 0 auto;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
-    #ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: #e8d5b7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 14px;
-      z-index: 10;
-      pointer-events: none;
-    }
-    #ui .score { font-size: 18px; font-weight: bold; }
-    #ui .hint { font-size: 12px; opacity: 0.7; margin-top: 4px; }
-    #startScreen, #gameOverScreen {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(26,26,46,0.95);
-      z-index: 20;
-      color: #e8d5b7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      text-align: center;
-    }
-    #startScreen h1, #gameOverScreen h1 {
-      font-size: 32px;
-      margin-bottom: 12px;
-      color: #ff6b9d;
-    }
-    #startScreen p, #gameOverScreen p {
-      font-size: 16px;
-      margin: 8px 0;
-      opacity: 0.8;
-    }
-    .btn {
-      margin-top: 24px;
-      padding: 14px 36px;
-      font-size: 18px;
-      border: none;
-      border-radius: 30px;
-      background: #ff6b9d;
-      color: #1a1a2e;
-      font-weight: bold;
-      cursor: pointer;
-      pointer-events: auto;
-      transition: transform 0.15s;
-    }
-    .btn:active { transform: scale(0.95); }
-    #gameOverScreen { display: none; }
-    .emoji { font-size: 48px; margin-bottom: 12px; }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>凌凌追我打</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #1a1a2e;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#gameCanvas {
+  display: block;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 1;
+}
+#ui {
+  position: fixed;
+  top: 10px; left: 10px;
+  color: #e8d5b7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  z-index: 10;
+  pointer-events: none;
+}
+#ui .score { font-size: 18px; font-weight: bold; }
+#ui .hint { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+#startScreen, #gameOverScreen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26,26,46,0.95);
+  z-index: 20;
+  color: #e8d5b7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  text-align: center;
+}
+#startScreen h1, #gameOverScreen h1 {
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: #ff6b9d;
+}
+#startScreen p, #gameOverScreen p {
+  font-size: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
+}
+.btn {
+  margin-top: 24px;
+  padding: 14px 36px;
+  font-size: 18px;
+  border: none;
+  border-radius: 30px;
+  background: #ff6b9d;
+  color: #1a1a2e;
+  font-weight: bold;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s;
+}
+.btn:active { transform: scale(0.95); }
+#gameOverScreen { display: none; }
+.emoji { font-size: 48px; margin-bottom: 12px; }
+</style>
 </head>
 <body>
-  <div id="ui">
-    <div class="score">凌凌追了我 <span id="score">0</span> 秒还没追到 😅</div>
-    <div class="hint">拖动 / 滑动 / 键盘方向键 逃跑</div>
-  </div>
+<div id="ui">
+  <div class="score">凌凌追了我 <span id="score">0</span> 秒还没追到 😅</div>
+  <div class="hint">拖动 / 滑动 / 键盘方向键 逃跑</div>
+</div>
 
-  <div id="startScreen">
-    <div class="emoji">🐍💨</div>
-    <h1>凌凌追我吃</h1>
-    <p>凌凌是一条贪吃蛇，一直追着我跑</p>
-    <p>我要拼命逃跑，别被她吃掉！</p>
-    <button class="btn" onclick="startGame()">开始逃跑</button>
-  </div>
+<div id="startScreen">
+  <div class="emoji">🐍💨</div>
+  <h1>凌凌追我打</h1>
+  <p>凌凌是一条贪吃蛇，一直追着我跑</p>
+  <p>我要拼命逃跑，别被她打到！</p>
+  <button class="btn" id="startBtn">开始逃跑</button>
+</div>
 
-  <div id="gameOverScreen">
-    <div class="emoji">😱</div>
-    <h1>被凌凌吃掉了！</h1>
-    <p>我坚持了 <span id="finalScore">0</span> 秒</p>
-    <p id="comment"></p>
-    <button class="btn" onclick="restartGame()">再逃一次</button>
-  </div>
+<div id="gameOverScreen">
+  <div class="emoji">😱</div>
+  <h1>被凌凌抓到了！</h1>
+  <p>我坚持了 <span id="finalScore">0</span> 秒</p>
+  <p id="comment"></p>
+  <button class="btn" id="restartBtn">再逃一次</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
-// === 游戏配置 ===
+// ========== 配置 ==========
 const CONFIG = {
-  playerSpeed: 4,
-  snakeBaseSpeed: 2.2,
-  snakeAccel: 0.015,
+  playerSpeed: 4.5,
+  snakeBaseSpeed: 2.0,
+  snakeAccel: 0.012,
   snakeSegDist: 14,
-  snakeInitLen: 8,
-  foodCount: 5,
-  starCount: 30,
-  worldMargin: 40
+  snakeInitLen: 10,
+  foodCount: 6,
+  starCount: 40,
+  margin: 30
 };
 
-// === 全局状态 ===
+// ========== 全局状态 ==========
+let canvas, ctx;
+let W, H;
 let gameState = 'start'; // start, playing, over
 let score = 0;
 let startTime = 0;
 let player, snake, foods, stars;
 let shake = 0;
-let trailLayer;
-let font;
+let animFrameId;
 
-// === 颜色 ===
-const COLORS = {
-  bg: '#1a1a2e',
-  snakeHead: '#ff6b9d',
-  snakeBody: '#c44569',
-  snakePattern: '#ff9ff3',
-  player: '#54a0ff',
-  playerGlow: '#74b9ff',
-  food: '#feca57',
-  star: '#dfe6e9'
-};
+// ========== 输入状态 ==========
+let keys = {};
+let touchActive = false;
+let touchX = 0, touchY = 0;
 
-// === 工具函数 ===
-function distSq(x1,y1,x2,y2){ let dx=x1-x2, dy=y1-y2; return dx*dx+dy*dy; }
+// ========== 工具函数 ==========
+function dist(x1, y1, x2, y2) {
+  return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+}
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
 
-// === 玩家类 ===
+// ========== 玩家 ==========
 class Player {
   constructor(x, y) {
-    this.pos = createVector(x, y);
-    this.vel = createVector(0, 0);
-    this.target = createVector(x, y);
+    this.x = x; this.y = y;
+    this.vx = 0; this.vy = 0;
     this.trail = [];
-    this.maxTrail = 20;
+    this.maxTrail = 15;
     this.angle = 0;
   }
   update() {
-    // 键盘输入
+    // 键盘
     let kx = 0, ky = 0;
-    if (keys[LEFT_ARROW] || keys[65]) kx -= 1;
-    if (keys[RIGHT_ARROW] || keys[68]) kx += 1;
-    if (keys[UP_ARROW] || keys[87]) ky -= 1;
-    if (keys[DOWN_ARROW] || keys[83]) ky += 1;
+    if (keys['ArrowLeft'] || keys['a']) kx -= 1;
+    if (keys['ArrowRight'] || keys['d']) kx += 1;
+    if (keys['ArrowUp'] || keys['w']) ky -= 1;
+    if (keys['ArrowDown'] || keys['s']) ky += 1;
+
     if (kx !== 0 || ky !== 0) {
-      let v = createVector(kx, ky).normalize().mult(CONFIG.playerSpeed * 1.3);
-      this.vel.lerp(v, 0.3);
+      let len = Math.sqrt(kx*kx + ky*ky);
+      this.vx += (kx/len * CONFIG.playerSpeed * 1.3 - this.vx) * 0.3;
+      this.vy += (ky/len * CONFIG.playerSpeed * 1.3 - this.vy) * 0.3;
     }
-    // 触摸/鼠标目标跟随
-    if (touchActive && touchTarget) {
-      let dir = p5.Vector.sub(touchTarget, this.pos);
-      if (dir.mag() > 5) {
-        dir.normalize().mult(CONFIG.playerSpeed * 1.5);
-        this.vel.lerp(dir, 0.25);
+    // 触摸
+    if (touchActive) {
+      let dx = touchX - this.x;
+      let dy = touchY - this.y;
+      let d = Math.sqrt(dx*dx + dy*dy);
+      if (d > 5) {
+        this.vx += (dx/d * CONFIG.playerSpeed * 1.5 - this.vx) * 0.25;
+        this.vy += (dy/d * CONFIG.playerSpeed * 1.5 - this.vy) * 0.25;
       }
     }
-    this.vel.limit(CONFIG.playerSpeed * 1.8);
-    this.pos.add(this.vel);
-    // 边界
-    this.pos.x = constrain(this.pos.x, CONFIG.worldMargin, width - CONFIG.worldMargin);
-    this.pos.y = constrain(this.pos.y, CONFIG.worldMargin, height - CONFIG.worldMargin);
-    // 朝向
-    if (this.vel.mag() > 0.5) this.angle = this.vel.heading();
+    // 限速
+    let spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+    if (spd > CONFIG.playerSpeed * 1.8) {
+      this.vx = this.vx / spd * CONFIG.playerSpeed * 1.8;
+      this.vy = this.vy / spd * CONFIG.playerSpeed * 1.8;
+    }
+    this.x += this.vx;
+    this.y += this.vy;
+    this.x = clamp(this.x, CONFIG.margin, W - CONFIG.margin);
+    this.y = clamp(this.y, CONFIG.margin, H - CONFIG.margin);
+    if (spd > 0.5) this.angle = Math.atan2(this.vy, this.vx);
     // 拖尾
-    this.trail.push(this.pos.copy());
+    this.trail.push({x: this.x, y: this.y});
     if (this.trail.length > this.maxTrail) this.trail.shift();
   }
-  display() {
+  draw(ctx) {
     // 拖尾
-    noStroke();
     for (let i = 0; i < this.trail.length; i++) {
       let t = i / this.trail.length;
-      fill(84, 160, 255, t * 60);
-      let s = 8 * t;
-      ellipse(this.trail[i].x, this.trail[i].y, s, s);
+      ctx.globalAlpha = t * 0.4;
+      ctx.fillStyle = '#54a0ff';
+      ctx.beginPath();
+      ctx.arc(this.trail[i].x, this.trail[i].y, 4 * t, 0, Math.PI*2);
+      ctx.fill();
     }
+    ctx.globalAlpha = 1;
     // 光晕
-    fill(116, 185, 255, 40);
-    ellipse(this.pos.x, this.pos.y, 36, 36);
+    ctx.fillStyle = 'rgba(116,185,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 18, 0, Math.PI*2);
+    ctx.fill();
     // 身体
-    push();
-    translate(this.pos.x, this.pos.y);
-    rotate(this.angle);
-    // 小身体
-    fill(84, 160, 255);
-    ellipse(0, 0, 22, 18);
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.fillStyle = '#54a0ff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 11, 9, 0, 0, Math.PI*2);
+    ctx.fill();
     // 眼睛
-    fill(255);
-    ellipse(6, -5, 7, 7);
-    ellipse(6, 5, 7, 7);
-    fill(30);
-    ellipse(7, -5, 3, 3);
-    ellipse(7, 5, 3, 3);
-    // 慌张表情
-    stroke(30);
-    strokeWeight(1.5);
-    noFill();
-    arc(-2, 0, 6, 6, PI*0.3, PI*0.7);
-    pop();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(6, -4, 3.5, 0, Math.PI*2);
+    ctx.arc(6, 4, 3.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(7, -4, 1.5, 0, Math.PI*2);
+    ctx.arc(7, 4, 1.5, 0, Math.PI*2);
+    ctx.fill();
+    // 慌张嘴
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(-2, 0, 3, 0.3*Math.PI, 0.7*Math.PI);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
-// === 蛇类 ===
+// ========== 蛇 ==========
 class Snake {
   constructor(x, y) {
     this.segments = [];
     for (let i = 0; i < CONFIG.snakeInitLen; i++) {
-      this.segments.push(createVector(x - i * CONFIG.snakeSegDist, y));
+      this.segments.push({x: x - i * CONFIG.snakeSegDist, y: y});
     }
     this.speed = CONFIG.snakeBaseSpeed;
     this.wigglePhase = 0;
@@ -225,284 +242,223 @@ class Snake {
   update(target) {
     this.speed += CONFIG.snakeAccel;
     let head = this.segments[0];
-    let dir = p5.Vector.sub(target, head);
-    let d = dir.mag();
-    dir.normalize();
-    // 越近越兴奋，摆动越大
-    let excitement = map(constrain(d, 0, 300), 0, 300, 1, 0.3);
+    let dx = target.x - head.x;
+    let dy = target.y - head.y;
+    let d = Math.sqrt(dx*dx + dy*dy);
+    let excitement = clamp(1 - d / 300, 0.3, 1);
     this.wigglePhase += 0.15 + excitement * 0.2;
     // 头部移动
-    let wiggle = sin(this.wigglePhase) * 3 * excitement;
-    let perp = createVector(-dir.y, dir.x).mult(wiggle);
-    let move = p5.Vector.add(dir, perp);
-    move.normalize().mult(this.speed);
-    head.add(move);
+    let ux = dx / d, uy = dy / d;
+    let wiggle = Math.sin(this.wigglePhase) * 3 * excitement;
+    let wx = -uy * wiggle, wy = ux * wiggle;
+    let mx = ux + wx, my = uy + wy;
+    let mlen = Math.sqrt(mx*mx + my*my);
+    head.x += mx / mlen * this.speed;
+    head.y += my / mlen * this.speed;
     // 身体跟随
     for (let i = 1; i < this.segments.length; i++) {
       let prev = this.segments[i-1];
       let curr = this.segments[i];
-      let d2 = p5.Vector.dist(prev, curr);
-      if (d2 > CONFIG.snakeSegDist) {
-        let pull = p5.Vector.sub(prev, curr);
-        pull.normalize().mult((d2 - CONFIG.snakeSegDist) * 0.4);
-        curr.add(pull);
+      let pdx = prev.x - curr.x, pdy = prev.y - curr.y;
+      let pd = Math.sqrt(pdx*pdx + pdy*pdy);
+      if (pd > CONFIG.snakeSegDist) {
+        let pull = (pd - CONFIG.snakeSegDist) * 0.4;
+        curr.x += pdx / pd * pull;
+        curr.y += pdy / pd * pull;
       }
     }
-    // 眼睛动画
-    this.eyeOffset = sin(this.wigglePhase * 2) * 2;
+    this.eyeOffset = Math.sin(this.wigglePhase * 2) * 2;
   }
-  display() {
-    // 身体段
-    noStroke();
+  draw(ctx) {
+    // 身体
     for (let i = this.segments.length - 1; i >= 0; i--) {
       let t = i / this.segments.length;
-      let s = map(i, 0, this.segments.length, 18, 10);
-      // 颜色渐变
-      let r = lerp(255, 196, t);
-      let g = lerp(107, 69, t);
-      let b = lerp(157, 105, t);
-      fill(r, g, b);
-      let seg = this.segments[i];
-      ellipse(seg.x, seg.y, s, s);
-      // 花纹
+      let s = 9 - t * 4;
+      let r = Math.round(255 - t * 59);
+      let g = Math.round(107 - t * 38);
+      let b = Math.round(157 - t * 52);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.beginPath();
+      ctx.arc(this.segments[i].x, this.segments[i].y, s, 0, Math.PI*2);
+      ctx.fill();
       if (i % 3 === 0) {
-        fill(255, 159, 243, 120);
-        ellipse(seg.x, seg.y, s * 0.5, s * 0.5);
+        ctx.fillStyle = 'rgba(255,159,243,0.5)';
+        ctx.beginPath();
+        ctx.arc(this.segments[i].x, this.segments[i].y, s * 0.5, 0, Math.PI*2);
+        ctx.fill();
       }
     }
     // 头部
     let head = this.segments[0];
-    let dir = p5.Vector.sub(this.segments[0], this.segments[1]);
-    let angle = dir.heading();
-    push();
-    translate(head.x, head.y);
-    rotate(angle);
-    // 头
-    fill(255, 107, 157);
-    ellipse(0, 0, 26, 22);
+    let dx = head.x - this.segments[1].x;
+    let dy = head.y - this.segments[1].y;
+    let angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#ff6b9d';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 13, 11, 0, 0, Math.PI*2);
+    ctx.fill();
     // 眼睛
-    fill(255);
-    ellipse(8, -7 + this.eyeOffset, 9, 9);
-    ellipse(8, 7 - this.eyeOffset, 9, 9);
-    fill(30);
-    ellipse(10, -7 + this.eyeOffset, 4, 4);
-    ellipse(10, 7 - this.eyeOffset, 4, 4);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(8, -6 + this.eyeOffset, 4.5, 0, Math.PI*2);
+    ctx.arc(8, 6 - this.eyeOffset, 4.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(9, -6 + this.eyeOffset, 2, 0, Math.PI*2);
+    ctx.arc(9, 6 - this.eyeOffset, 2, 0, Math.PI*2);
+    ctx.fill();
     // 高光
-    fill(255, 200);
-    ellipse(6, -8 + this.eyeOffset, 3, 3);
-    ellipse(6, 6 - this.eyeOffset, 3, 3);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.arc(7, -7 + this.eyeOffset, 1.5, 0, Math.PI*2);
+    ctx.arc(7, 5 - this.eyeOffset, 1.5, 0, Math.PI*2);
+    ctx.fill();
     // 舌头
-    if (frameCount % 30 < 15) {
-      stroke(255, 80, 120);
-      strokeWeight(2);
-      noFill();
-      let tongueLen = 12 + sin(frameCount * 0.5) * 4;
-      line(12, 0, 12 + tongueLen, -3);
-      line(12 + tongueLen, -3, 12 + tongueLen + 4, -6);
-      line(12, 0, 12 + tongueLen, 3);
-      line(12 + tongueLen, 3, 12 + tongueLen + 4, 6);
+    let f = Date.now() % 2000;
+    if (f < 1000) {
+      ctx.strokeStyle = '#ff5078';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let tl = 6 + Math.sin(f * 0.01) * 2;
+      ctx.moveTo(10, 0);
+      ctx.lineTo(10 + tl, -2);
+      ctx.moveTo(10 + tl, -2);
+      ctx.lineTo(10 + tl + 3, -4);
+      ctx.moveTo(10, 0);
+      ctx.lineTo(10 + tl, 2);
+      ctx.moveTo(10 + tl, 2);
+      ctx.lineTo(10 + tl + 3, 4);
+      ctx.stroke();
     }
-    pop();
+    ctx.restore();
   }
   checkCollision(target, threshold) {
     let head = this.segments[0];
-    return distSq(head.x, head.y, target.x, target.y) < threshold * threshold;
+    return dist(head.x, head.y, target.x, target.y) < threshold;
   }
 }
 
-// === 食物类 ===
+// ========== 食物 ==========
 class Food {
   constructor() {
-    this.pos = createVector(
-      random(CONFIG.worldMargin, width - CONFIG.worldMargin),
-      random(CONFIG.worldMargin, height - CONFIG.worldMargin)
-    );
-    this.phase = random(TWO_PI);
-    this.type = floor(random(3)); // 0:爱心 1:星星 2:糖果
+    this.x = rand(CONFIG.margin, W - CONFIG.margin);
+    this.y = rand(CONFIG.margin, H - CONFIG.margin);
+    this.phase = rand(0, Math.PI*2);
+    this.type = Math.floor(rand(0, 3));
   }
   update() {
     this.phase += 0.05;
-    this.pos.y += sin(this.phase) * 0.3;
+    this.y += Math.sin(this.phase) * 0.3;
   }
-  display() {
-    push();
-    translate(this.pos.x, this.pos.y);
-    let s = 12 + sin(this.phase * 2) * 3;
-    noStroke();
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    let s = 6 + Math.sin(this.phase * 2) * 2;
     if (this.type === 0) {
-      fill(255, 107, 129);
-      // 简单爱心
-      ellipse(-3, -2, s*0.7, s*0.7);
-      ellipse(3, -2, s*0.7, s*0.7);
-      triangle(-s*0.5, 0, s*0.5, 0, 0, s*0.8);
+      ctx.fillStyle = '#ff6b81';
+      ctx.beginPath();
+      ctx.arc(-2, -2, s*0.5, 0, Math.PI*2);
+      ctx.arc(2, -2, s*0.5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-s*0.5, 0);
+      ctx.lineTo(s*0.5, 0);
+      ctx.lineTo(0, s*0.6);
+      ctx.closePath();
+      ctx.fill();
     } else if (this.type === 1) {
-      fill(254, 202, 87);
-      // 星星
-      beginShape();
+      ctx.fillStyle = '#feca57';
+      ctx.beginPath();
       for (let i = 0; i < 10; i++) {
-        let a = PI/2 + i * TWO_PI/10;
+        let a = Math.PI/2 + i * Math.PI*2/10;
         let r = i % 2 === 0 ? s : s * 0.5;
-        vertex(cos(a) * r, sin(a) * r);
+        if (i === 0) ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r);
+        else ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
       }
-      endShape(CLOSE);
+      ctx.closePath();
+      ctx.fill();
     } else {
-      fill(255, 159, 67);
-      ellipse(0, 0, s, s * 0.8);
-      fill(255, 200);
-      ellipse(-2, -2, 3, 3);
+      ctx.fillStyle = '#ff9f43';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s, s*0.8, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(-1, -1, 1.5, 0, Math.PI*2);
+      ctx.fill();
     }
-    pop();
+    ctx.restore();
   }
 }
 
-// === 星星背景 ===
+// ========== 星星背景 ==========
 class Star {
   constructor() {
     this.reset();
   }
   reset() {
-    this.x = random(width);
-    this.y = random(height);
-    this.size = random(1, 3);
-    this.blinkPhase = random(TWO_PI);
-    this.blinkSpeed = random(0.02, 0.06);
+    this.x = rand(0, W);
+    this.y = rand(0, H);
+    this.size = rand(1, 3);
+    this.phase = rand(0, Math.PI*2);
+    this.speed = rand(0.02, 0.06);
   }
   update() {
-    this.blinkPhase += this.blinkSpeed;
+    this.phase += this.speed;
   }
-  display() {
-    let alpha = 80 + sin(this.blinkPhase) * 60;
-    fill(223, 230, 233, alpha);
-    noStroke();
-    ellipse(this.x, this.y, this.size, this.size);
+  draw(ctx) {
+    let alpha = 0.3 + Math.sin(this.phase) * 0.25;
+    ctx.fillStyle = `rgba(223,230,233,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+    ctx.fill();
   }
 }
 
-// === 输入处理 ===
-let keys = {};
-let touchActive = false;
-let touchTarget = null;
-
-function keyPressed() { keys[keyCode] = true; return false; }
-function keyReleased() { keys[keyCode] = false; return false; }
-
-function touchStarted() {
-  touchActive = true;
-  touchTarget = createVector(touches[0].x, touches[0].y);
-  return false;
-}
-function touchMoved() {
-  if (touches.length > 0) {
-    touchTarget = createVector(touches[0].x, touches[0].y);
-  }
-  return false;
-}
-function touchEnded() {
-  touchActive = false;
-  touchTarget = null;
-  return false;
-}
-
-// 鼠标也支持（桌面）
-function mousePressed() {
-  touchActive = true;
-  touchTarget = createVector(mouseX, mouseY);
-}
-function mouseDragged() {
-  touchActive = true;
-  touchTarget = createVector(mouseX, mouseY);
-  return false;
-}
-function mouseReleased() {
-  touchActive = false;
-  touchTarget = null;
-}
-
-// === p5.js 生命周期 ===
-function setup() {
-  let canvas = createCanvas(windowWidth, windowHeight);
-  canvas.style('display', 'block');
-  colorMode(RGB, 255, 255, 255, 255);
-  noCursor();
-  // 初始化星星
+// ========== 游戏控制 ==========
+function initGame() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  resize();
   stars = [];
   for (let i = 0; i < CONFIG.starCount; i++) stars.push(new Star());
+  drawStart();
 }
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
   if (stars) {
     stars = [];
     for (let i = 0; i < CONFIG.starCount; i++) stars.push(new Star());
   }
 }
 
-function draw() {
-  // 震动效果
-  if (shake > 0) {
-    translate(random(-shake, shake), random(-shake, shake));
-    shake *= 0.85;
-    if (shake < 0.5) shake = 0;
-  }
-
-  // 背景
-  background(26, 26, 46);
-
-  // 星星
-  for (let s of stars) { s.update(); s.display(); }
-
-  if (gameState === 'playing') {
-    // 更新分数
-    score = floor((Date.now() - startTime) / 1000);
-    document.getElementById('score').textContent = score;
-
-    // 食物
-    for (let f of foods) { f.update(); f.display(); }
-
-    // 蛇追玩家
-    snake.update(player.pos);
-    snake.display();
-
-    // 玩家逃跑
-    player.update();
-    player.display();
-
-    // 碰撞检测
-    if (snake.checkCollision(player.pos, 18)) {
-      gameOver();
-    }
-
-    // 距离越近越紧张
-    let d = p5.Vector.dist(snake.segments[0], player.pos);
-    if (d < 80) {
-      shake = map(d, 0, 80, 6, 0);
-    }
-  }
-}
-
-// === 游戏控制 ===
 function startGame() {
   document.getElementById('startScreen').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'none';
   gameState = 'playing';
   startTime = Date.now();
   score = 0;
-
-  player = new Player(width * 0.3, height * 0.5);
-  snake = new Snake(width * 0.7, height * 0.5);
-
+  player = new Player(W * 0.3, H * 0.5);
+  snake = new Snake(W * 0.7, H * 0.5);
   foods = [];
   for (let i = 0; i < CONFIG.foodCount; i++) foods.push(new Food());
-
   loop();
 }
 
 function gameOver() {
   gameState = 'over';
-  noLoop();
+  cancelAnimationFrame(animFrameId);
   document.getElementById('finalScore').textContent = score;
   let comment = '';
-  if (score < 5) comment = '凌凌太凶了，我还没跑远就被吃掉了 😭';
+  if (score < 5) comment = '凌凌太凶了，我还没跑远就被抓到了 😭';
   else if (score < 15) comment = '我尽力了，凌凌追得太紧 🥺';
   else if (score < 30) comment = '跑得不错，但凌凌更快 😅';
   else if (score < 60) comment = '我很能跑嘛，凌凌都追累了 😏';
@@ -511,9 +467,104 @@ function gameOver() {
   document.getElementById('gameOverScreen').style.display = 'flex';
 }
 
-function restartGame() {
-  startGame();
+function loop() {
+  if (gameState !== 'playing') return;
+  update();
+  draw();
+  animFrameId = requestAnimationFrame(loop);
 }
+
+function update() {
+  score = Math.floor((Date.now() - startTime) / 1000);
+  document.getElementById('score').textContent = score;
+  for (let f of foods) f.update();
+  snake.update(player);
+  player.update();
+  if (snake.checkCollision(player, 16)) {
+    gameOver();
+    return;
+  }
+  let d = dist(snake.segments[0].x, snake.segments[0].y, player.x, player.y);
+  if (d < 80) shake = (80 - d) / 80 * 5;
+}
+
+function draw() {
+  ctx.save();
+  if (shake > 0) {
+    ctx.translate(rand(-shake, shake), rand(-shake, shake));
+    shake *= 0.85;
+    if (shake < 0.3) shake = 0;
+  }
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+  for (let s of stars) { s.update(); s.draw(ctx); }
+  for (let f of foods) f.draw(ctx);
+  snake.draw(ctx);
+  player.draw(ctx);
+  ctx.restore();
+}
+
+function drawStart() {
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+  for (let s of stars) { s.update(); s.draw(ctx); }
+}
+
+// ========== 事件绑定 ==========
+window.addEventListener('resize', resize);
+
+// 键盘
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => {
+  keys[e.key] = false;
+});
+
+// 触摸
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  touchActive = true;
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+}, {passive: false});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length > 0) {
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+  }
+}, {passive: false});
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  touchActive = false;
+}, {passive: false});
+
+// 鼠标（桌面）
+canvas.addEventListener('mousedown', e => {
+  touchActive = true;
+  touchX = e.clientX;
+  touchY = e.clientY;
+});
+canvas.addEventListener('mousemove', e => {
+  if (touchActive) {
+    touchX = e.clientX;
+    touchY = e.clientY;
+  }
+});
+canvas.addEventListener('mouseup', e => {
+  touchActive = false;
+});
+
+// 按钮
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+
+// 启动
+initGame();
 </script>
 </body>
 </html>
