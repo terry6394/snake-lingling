@@ -453,7 +453,7 @@ function draw() {
 
   if (gameState === 'playing') {
     // 更新分数
-    score = floor((millis() - startTime) / 1000);
+    score = floor((Date.now() - startTime) / 1000);
     document.getElementById('score').textContent = score;
 
     // 食物
@@ -485,7 +485,7 @@ function startGame() {
   document.getElementById('startScreen').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'none';
   gameState = 'playing';
-  startTime = millis();
+  startTime = Date.now();
   score = 0;
 
   player = new Player(width * 0.3, height * 0.5);
